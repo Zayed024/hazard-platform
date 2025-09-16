@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Boolean,func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
@@ -14,15 +14,17 @@ class HazardReport(Base):
     hazard_type = Column(String(50), nullable=False)
     severity_score = Column(Float, default=0.5)
     trust_score = Column(Float, default=0.3)
-    location = Column(Geometry('POINT'))
+    report_source = Column(String, default='citizen_app')
+    #location = Column(Geometry('POINT'))
     latitude = Column(Float)
     longitude = Column(Float)
     address = Column(String(500))
-    reporter_id = Column(String(100))
+    user_id = Column(Integer, nullable=True) # Nullable for social media reports
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-
+    image_url = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
 class SocialMediaPost(Base):
     __tablename__ = "social_media_posts"
     

@@ -5,7 +5,7 @@ import uvicorn
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from routes.hazards import router as hazards_router
+from routes.hazards import router as hazards,websockets
 
 app = FastAPI(
     title="Synapse Hazard Intelligence API",
@@ -23,7 +23,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(hazards_router)
+app.include_router(hazards.router)
+app.include_router(websockets.router)
 
 @app.get("/")
 async def root():
