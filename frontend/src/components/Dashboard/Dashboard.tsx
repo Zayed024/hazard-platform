@@ -1,3 +1,4 @@
+//synapse-hazard-platform\frontend\src\components\Dashboard\Dashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { 
   Grid, 
@@ -17,52 +18,94 @@ import {
   CheckCircle as VerifiedIcon,
   TrendingUp as TrendingIcon
 } from '@mui/icons-material';
+import { getDashboardAnalytics, getHazardReports, Hazard, DashboardStats } from '../../services/apiService'; // Import our new service and types
 import HazardMap from './HazardMap';
 
-interface DashboardStats {
-  totalReports: number;
-  activeHazards: number;
-  verifiedReports: number;
-  avgTrustScore: number;
-  hazardTypes: {
-    flood: number;
-    infrastructure: number;
-    weather: number;
-    other: number;
-  };
-}
+// interface DashboardStats {
+//   totalReports: number;
+//   activeHazards: number;
+//   verifiedReports: number;
+//   avgTrustScore: number;
+//   hazardTypes: {
+//     flood: number;
+//     infrastructure: number;
+//     weather: number;
+//     other: number;
+//   };
+// }
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [hazards, setHazards] = useState<Hazard[]>([]); // Add state for hazards
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call to fetch dashboard data
+    // This now fetches REAL data from your backend
     const fetchDashboardData = async () => {
       try {
-        // Mock data - replace with actual API call
-        setTimeout(() => {
-          setStats({
-            totalReports: 1247,
-            activeHazards: 23,
-            verifiedReports: 891,
-            avgTrustScore: 0.73,
-            hazardTypes: {
-              flood: 45,
-              infrastructure: 12,
-              weather: 8,
-              other: 15
-            }
-          });
-          setLoading(false);
-        }, 1000);
+        setLoading(true);
+        // Fetch both analytics and hazard reports in parallel
+        const [analyticsData, reportsData] = await Promise.all([
+          getDashboardAnalytics(),
+          getHazardReports()
+        ]);
+        
+        setStats(analyticsData);
+        setHazards(reportsData);
+
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
+
+     //Establish the WebSocket connection for real-time updates
+    const ws = new WebSocket("ws://localhost:8000/ws/dashboard");
+
+    ws.onopen = () => {
+      console.log("WebSocket connection established for live updates.");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const newReport: Hazard = JSON.parse(event.data);
+        console.log("New live report received:", newReport);
+
+        // Update the hazards list to add the new report at the top
+        setHazards(prevHazards => [newReport, ...prevHazards]);
+
+        // Update the statistics cards dynamically
+         setStats(prevStats => {
+          if (!prevStats) return null;
+          
+          const newHazardTypes = { ...prevStats.hazard_types };
+          newHazardTypes[newReport.hazard_type] = (newHazardTypes[newReport.hazard_type] || 0) + 1;
+
+          return {
+            ...prevStats,
+            total_reports: prevStats.total_reports + 1,
+            active_hazards: prevStats.active_hazards + 1, // Assuming new reports are active
+            hazard_types: newHazardTypes
+          };
+        });
+
+      } catch (error) {
+        console.error("Error processing WebSocket message:", error);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("WebSocket connection closed.");
+    };
+
+    // 3. Clean up the connection when the component unmounts
+    return () => {
+      ws.close();
+    };
+        
   }, []);
 
   const StatCard: React.FC<{ 
@@ -108,52 +151,52 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 'bold' }}>
-        🌊 Synapse - Hazard Intelligence Dashboard
-      </Typography>
+  <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 'bold' }}>
+      🌊 Synapse - Hazard Intelligence Dashboard
+    </Typography>
+    
+    <Grid container spacing={3}>
+      {/* Stats Cards */}
+      <Grid item xs={12} sm={6} md={3}>
+        <StatCard
+          title="Total Reports"
+          value={stats?.total_reports?.toLocaleString() || 0} // Use snake_case
+          icon={<TrendingIcon sx={{ fontSize: 40 }} />}
+          color="primary.main"
+          subtitle="All time submissions"
+        />
+      </Grid>
       
-      <Grid container spacing={3}>
-        {/* Stats Cards */}
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Reports"
-            value={stats?.totalReports.toLocaleString() || 0}
-            icon={<TrendingIcon sx={{ fontSize: 40 }} />}
-            color="primary.main"
-            subtitle="All time submissions"
-          />
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Active Hazards"
-            value={stats?.activeHazards || 0}
-            icon={<WarningIcon sx={{ fontSize: 40 }} />}
-            color="warning.main"
-            subtitle="Requiring attention"
-          />
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Verified Reports"
-            value={stats?.verifiedReports.toLocaleString() || 0}
-            icon={<VerifiedIcon sx={{ fontSize: 40 }} />}
-            color="success.main"
-            subtitle="Quality assured"
-          />
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Avg Trust Score"
-            value={`${((stats?.avgTrustScore || 0) * 100).toFixed(0)}%`}
-            icon={<CheckCircle sx={{ fontSize: 40 }} />}
-            color="info.main"
-            subtitle="AI confidence level"
-          />
-        </Grid>
+      <Grid item xs={12} sm={6} md={3}>
+        <StatCard
+          title="Active Hazards"
+          value={stats?.active_hazards || 0} // Use snake_case
+          icon={<WarningIcon sx={{ fontSize: 40 }} />}
+          color="warning.main"
+          subtitle="Requiring attention"
+        />
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={3}>
+        <StatCard
+          title="Verified Reports"
+          value={stats?.verified_reports?.toLocaleString() || 0} // Use snake_case
+          icon={<VerifiedIcon sx={{ fontSize: 40 }} />}
+          color="success.main"
+          subtitle="Quality assured"
+        />
+      </Grid>
+      
+      <Grid item xs={12} sm={6} md={3}>
+        <StatCard
+          title="Avg Trust Score"
+          value={`${Math.round((stats?.avg_trust_score || 0) * 100)}%`} // Use snake_case
+          icon={<VerifiedIcon sx={{ fontSize: 40 }} />}
+          color="info.main"
+          subtitle="AI confidence level"
+        />
+      </Grid>
 
         {/* Hazard Types Summary */}
         <Grid item xs={12} md={4}>
@@ -162,20 +205,20 @@ const Dashboard: React.FC = () => {
               📊 Hazard Distribution
             </Typography>
             <Box sx={{ mt: 2 }}>
-              {stats && Object.entries(stats.hazardTypes).map(([type, count]) => {
-                const icons = {
-                  flood: <FloodIcon sx={{ fontSize: 20 }} />,
-                  infrastructure: <InfraIcon sx={{ fontSize: 20 }} />,
-                  weather: <WeatherIcon sx={{ fontSize: 20 }} />,
-                  other: <WarningIcon sx={{ fontSize: 20 }} />
-                };
-                
-                const colors = {
-                  flood: 'primary',
-                  infrastructure: 'warning', 
-                  weather: 'error',
-                  other: 'default'
-                } as const;
+              {stats?.hazard_types && Object.entries(stats.hazard_types).map(([type, count]) => {
+                const icons: Record<string, JSX.Element> = {
+                flood: <FloodIcon sx={{ fontSize: 20 }} />,
+                infrastructure: <InfraIcon sx={{ fontSize: 20 }} />,
+                weather: <WeatherIcon sx={{ fontSize: 20 }} />,
+                other: <WarningIcon sx={{ fontSize: 20 }} />
+              };
+
+              const colors: Record<string, 'primary' | 'warning' | 'error' | 'default'> = {
+                flood: 'primary',
+                infrastructure: 'warning',
+                weather: 'error',
+                other: 'default'
+              };
 
                 return (
                   <Box key={type} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -208,7 +251,7 @@ const Dashboard: React.FC = () => {
                 <Chip label="⛈️ Weather" color="error" size="small" />
               </Box>
             </Box>
-            <HazardMap />
+            <HazardMap hazards={hazards} />
           </Paper>
         </Grid>
 

@@ -22,41 +22,14 @@ interface Hazard {
   longitude: number;
 }
 
-const HazardMap: React.FC = () => {
-  const [hazards, setHazards] = useState<Hazard[]>([]);
+interface HazardMapProps {
+  hazards: Hazard[];
+}
+
+
+const HazardMap: React.FC<HazardMapProps> = ({ hazards }) => { 
   
-  useEffect(() => {
-    // Mock data for demo - Chennai area
-    setHazards([
-      {
-        id: 1,
-        title: "Road Flooding",
-        hazard_type: "flood",
-        severity_score: 0.8,
-        trust_score: 0.9,
-        latitude: 13.0827,
-        longitude: 80.2707
-      },
-      {
-        id: 2,
-        title: "Tree Fall",
-        hazard_type: "infrastructure", 
-        severity_score: 0.6,
-        trust_score: 0.7,
-        latitude: 13.0600,
-        longitude: 80.2500
-      },
-      {
-        id: 3,
-        title: "Waterlogging near T.Nagar",
-        hazard_type: "flood",
-        severity_score: 0.9,
-        trust_score: 0.8,
-        latitude: 13.0418,
-        longitude: 80.2341
-      }
-    ]);
-  }, []);
+  
 
   const getMarkerColor = (hazardType: string) => {
     switch (hazardType) {

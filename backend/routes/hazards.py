@@ -7,8 +7,11 @@ from app.database import get_db
 from models.hazard import HazardReport
 from geoalchemy2.shape import from_shape
 from shapely.geometry import Point
+from sqlalchemy import func, case
 
-from app.ai import text_analyzer, image_analyzer
+
+
+from app.ai import text_analyser, image_analyser
 from websockets import manager as websocket_manager
 
 router = APIRouter(prefix="/api/hazards", tags=["hazards"])
@@ -62,7 +65,7 @@ async def create_hazard_report(
             raise HTTPException(status_code=400, detail="Maximum 3 images allowed")
 
 
-        text_score = text_analyzer.analyze_report_text(description)
+        text_score = text_analyser.analyze_report_text(description)
         image_score = 0.0
         if images:
             image_scores = []
@@ -70,7 +73,7 @@ async def create_hazard_report(
                 image_content = await image.read()
                 # It's important to seek back to the start if you need to read the file again
                 image.file.seek(0) 
-                score = image_analyzer.analyze_report_image(image_content)
+                score = image_analyser.analyze_report_image(image_content)
                 image_scores.append(score)
             
             if image_scores:
@@ -149,16 +152,35 @@ async def get_nearby_hazards(lat: float, lon: float, radius: int = 5000):
     return {"hazards": mock_hazards, "total": len(mock_hazards)}
 
 @router.get("/analytics/dashboard")
-async def get_dashboard_analytics():
+async def get_dashboard_analytics(db: Session = Depends(get_db)):
+    """
+    Calculates and returns key statistics for the dashboard.
+    """
+    # 1. Total Reports
+    total_reports = db.query(HazardReport).count()
+
+    # 2. Active Hazards (example: not yet verified)
+    active_hazards = db.query(HazardReport).filter(HazardReport.is_verified == False).count()
+
+    # 3. Verified Reports
+    verified_reports = db.query(HazardReport).filter(HazardReport.is_verified == True).count()
+
+    # 4. Average Trust Score (handle division by zero)
+    avg_trust_score_query = db.query(func.avg(HazardReport.trust_score)).scalar()
+    avg_trust_score = round(avg_trust_score_query, 2) if avg_trust_score_query else 0
+
+    # 5. Hazard Type Distribution
+    hazard_types_query = db.query(
+        HazardReport.hazard_type, 
+        func.count(HazardReport.hazard_type)
+    ).group_by(HazardReport.hazard_type).all()
+    
+    hazard_types = {htype: count for htype, count in hazard_types_query}
+
     return {
-        "total_reports": 1247,
-        "active_hazards": 23,
-        "verified_reports": 891,
-        "avg_trust_score": 0.73,
-        "hazard_types": {
-            "flood": 45,
-            "infrastructure": 12,
-            "weather": 8,
-            "other": 15
-        }
+        "total_reports": total_reports,
+        "active_hazards": active_hazards,
+        "verified_reports": verified_reports,
+        "avg_trust_score": avg_trust_score,
+        "hazard_types": hazard_types
     }
