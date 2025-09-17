@@ -48,7 +48,7 @@ class HazardReportResponse(BaseModel):
     is_verified: bool
     created_at: str
 
-@router.post("/report", response_model=dict)
+@router.post("/report", response_model=dict,status_code=201)
 async def create_hazard_report(
     # Use Form for multipart data
     title: str = Form(...),
