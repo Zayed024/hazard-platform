@@ -9,7 +9,7 @@ import time
 import random
 from datetime import datetime, timedelta
 
-API_BASE = "http://localhost:8000/api"
+API_BASE = "http://localhost:8000"
 
 # Chennai area coordinates for realistic sample data
 CHENNAI_BOUNDS = {
@@ -130,8 +130,9 @@ def populate_data():
             
             print(f"\n📋 Creating report {i}/{len(SAMPLE_REPORTS)}: {report['title'][:50]}...")
             
-            response = requests.post(f"{API_BASE}/hazards/report", 
-                                   json=report, 
+            response = requests.post(f"{API_BASE}/api/hazards/report", 
+                                   data=report, 
+                                   files=[],
                                    timeout=10)
             
             if response.status_code == 200:

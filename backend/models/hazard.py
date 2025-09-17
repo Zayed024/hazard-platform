@@ -15,7 +15,7 @@ class HazardReport(Base):
     severity_score = Column(Float, default=0.5)
     trust_score = Column(Float, default=0.3)
     report_source = Column(String, default='citizen_app')
-    #location = Column(Geometry('POINT'))
+    location = Column(Geometry('POINT'))
     latitude = Column(Float)
     longitude = Column(Float)
     address = Column(String(500))
