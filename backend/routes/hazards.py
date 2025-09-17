@@ -12,7 +12,7 @@ from sqlalchemy import func, case
 
 
 from app.ai import text_analyser, image_analyser
-from websockets import manager as websocket_manager
+from app.websocket_handler import manager as websocket_manager
 
 router = APIRouter(prefix="/api/hazards", tags=["hazards"])
 
