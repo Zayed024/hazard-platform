@@ -21,6 +21,9 @@ wheels/
 *.egg
 MANIFEST
 
+# Unignore mobile/lib for Flutter
+!mobile/lib/
+
 # Virtual environments
 venv/
 ENV/
