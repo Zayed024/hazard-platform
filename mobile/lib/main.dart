@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:synapse_citizen_app/screens/alerts_screen.dart';
 import 'package:synapse_citizen_app/screens/map_screen.dart';
 import 'package:synapse_citizen_app/screens/profile_screen.dart';
@@ -7,11 +6,6 @@ import 'package:synapse_citizen_app/screens/report_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Supabase.initialize(
-    url: 'https://vwgrfumuoovrilfbdttb.supabase.co', // Use your actual URL
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ3Z3JmdW11b292cmlsZmJkdHRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTU4NjgsImV4cCI6MjA3MzY5MTg2OH0.6W3IohCXN12qF_u5YtlSLvbsmDxLj9g4tEfCT2gw1S4', // Use your actual anon key
-  );
 
   runApp(const SynapseApp());
 }

@@ -8,9 +8,8 @@ from models.hazard import HazardReport
 from geoalchemy2.shape import from_shape
 from shapely.geometry import Point
 from sqlalchemy import func, case
-
-
-
+from typing import List
+from datetime import datetime
 from app.ai import text_analyser, image_analyser
 from app.websocket_handler import manager as websocket_manager
 
@@ -35,6 +34,8 @@ class HazardReportCreate(BaseModel):
     address: Optional[str] = None
     media_urls: Optional[List[str]] = []
 
+
+
 class HazardReportResponse(BaseModel):
     id: int
     title: str
@@ -46,7 +47,8 @@ class HazardReportResponse(BaseModel):
     longitude: float
     address: str
     is_verified: bool
-    created_at: str
+    created_at: Optional[datetime] = None
+
 
 @router.post("/report", response_model=dict,status_code=201)
 async def create_hazard_report(
@@ -184,3 +186,11 @@ async def get_dashboard_analytics(db: Session = Depends(get_db)):
         "avg_trust_score": avg_trust_score,
         "hazard_types": hazard_types
     }
+# Add the response_model here
+@router.get("/reports/", response_model=List[HazardReportResponse])
+async def get_all_hazard_reports(db: Session = Depends(get_db)):
+    """
+    Retrieves all hazard reports from the database.
+    """
+    reports = db.query(HazardReport).order_by(HazardReport.created_at.desc()).all()
+    return reports

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:synapse_citizen_app/models/report_model.dart';
-import 'package:synapse_citizen_app/services/supabase_service.dart';
+import 'package:synapse_citizen_app/models/hazard_report.dart';
+import 'package:synapse_citizen_app/services/api_service.dart';
 
 class ReportScreen extends StatefulWidget {
   final Function() onReportSubmitted;
@@ -15,7 +15,7 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
-  final _supabaseService = SupabaseService();
+  final _apiService = ApiService(); // Use ApiService instead of SupabaseService
   bool _isSubmitting = false;
 
   String? _selectedHazard;
@@ -52,15 +52,17 @@ class _ReportScreenState extends State<ReportScreen> {
     });
 
     try {
-      await _supabaseService.addReport(
+      final report = HazardReport(
         title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
         hazardType: _selectedHazard!,
-        address: _locationController.text.trim(),
         latitude: _currentLatLng?.latitude ?? 0.0,
         longitude: _currentLatLng?.longitude ?? 0.0,
-        description: _descriptionController.text.trim(),
-        imageFile: _imageFiles.isNotEmpty ? _imageFiles.first : null, // <-- THE FIX IS HERE
+        address: _locationController.text.trim(),
+        mediaFiles: _imageFiles,
       );
+
+      await _apiService.submitHazardReport(report);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -80,7 +82,6 @@ class _ReportScreenState extends State<ReportScreen> {
 
       // Navigate to map
       widget.onReportSubmitted();
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

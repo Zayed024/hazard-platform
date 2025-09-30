@@ -1,6 +1,7 @@
 import 'dart:io';
 
 class HazardReport {
+  final int? id;
   final String title;
   final String description;
   final String hazardType;
@@ -9,9 +10,12 @@ class HazardReport {
   final String? address;
   final List<String> mediaUrls;
   final List<File>? mediaFiles;
-  final DateTime timestamp;
+  final DateTime? createdAt;
+  final int? upvotes;
+  final bool? isVerified;
 
   HazardReport({
+    this.id,
     required this.title,
     required this.description,
     required this.hazardType,
@@ -20,33 +24,27 @@ class HazardReport {
     this.address,
     this.mediaUrls = const [],
     this.mediaFiles,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
-
-  Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'description': description,
-      'hazard_type': hazardType,
-      'latitude': latitude,
-      'longitude': longitude,
-      'address': address,
-      'media_urls': mediaUrls,
-      'timestamp': timestamp.toIso8601String(),
-    };
-  }
+    this.createdAt,
+    this.upvotes,
+    this.isVerified,
+  });
 
   factory HazardReport.fromJson(Map<String, dynamic> json) {
     return HazardReport(
-      title: json['title'] as String,
-      description: json['description'] as String,
-      hazardType: json['hazard_type'] as String,
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
+      id: json['id'] as int?,
+      title: json['title'] ?? 'No Title',
+      description: json['description'] ?? '',
+      hazardType: json['hazard_type'] ?? 'Other',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       address: json['address'] as String?,
       mediaUrls: (json['media_urls'] as List<dynamic>?)
           ?.map((e) => e.toString()).toList() ?? [],
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : null,
+      upvotes: json['upvotes'] as int?,
+      isVerified: json['is_verified'] as bool?,
     );
   }
 }

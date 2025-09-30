@@ -43,9 +43,7 @@ class ApiService {
       _logger.d('Response status: ${response.statusCode}');
       _logger.d('Response body: ${response.body}');
 
-      // ...existing code...
-if (response.statusCode == 200 || response.statusCode == 201) {
-// ...existing code...{
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = json.decode(response.body);
         return HazardReportResponse.fromJson(responseData);
       } else {
@@ -142,6 +140,35 @@ if (response.statusCode == 200 || response.statusCode == 201) {
     } catch (e) {
       _logger.w('Server health check failed: $e');
       return false;
+    }
+  }
+
+  Future<List<HazardReport>> getHazardReports() async {
+    try {
+      _logger.i('Fetching all hazard reports');
+      final response = await http.get(
+        Uri.parse('$_baseUrl/hazards/reports/'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = json.decode(response.body);
+        return responseData.map((data) => HazardReport.fromJson(data)).toList();
+      } else {
+        throw ApiException(
+          'Failed to fetch hazard reports: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    } on SocketException {
+      throw ApiException(
+        'No internet connection. Please check your network and try again.',
+        0,
+      );
+    } catch (e) {
+      _logger.e('Error fetching hazard reports: $e');
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to fetch hazard reports: $e', 0);
     }
   }
 }
